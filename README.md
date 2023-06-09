@@ -1,6 +1,7 @@
 # EMSAFormer: Efficient Multi-Task Scene Analysis with RGB-D Transformers
 This repository contains the code to our paper 
-"EMSAFormer: Efficient Multi-Task Scene Analysis with RGB-D Transformers".
+"EMSAFormer: Efficient Multi-Task Scene Analysis with RGB-D Transformers" 
+([arXiv](https://arxiv.org/pdf/2306.05242.pdf))
 
 EMSAFormer builds on top of our previous work, 
 [EMSANet](https://github.com/TUI-NICR/EMSANet), to efficiently perform tasks 
@@ -21,7 +22,7 @@ The source code is published under Apache 2.0 license, see
 [license file](LICENSE) for details.
 
 If you use the source code or the network weights, please cite the following 
-paper:
+paper ([arXiv](https://arxiv.org/pdf/2306.05242.pdf)):
 
 > Fischedick, S., Seichter, D., Schmidt, R., Rabes, L., Gross, H.-M.
 *Efficient Multi-Task Scene Analysis with RGB-D Transformers*,
@@ -31,7 +32,7 @@ to appear in IEEE International Joint Conference on Neural Networks (IJCNN), 202
 @article{emsaformer2023,
   title={Efficient {Multi-Task} Scene Analysis with {RGB-D} Transformers},
   author={S{\"o}hnke B. Fischedick and Daniel Seichter and Robin Schmidt and Leonard Rabes and Horst-Michael Gross},
-  journal={arXiv preprint arXiv:tbd},
+  journal={arXiv preprint arXiv:2306.05242},
   year={2023}
 }
 ```
