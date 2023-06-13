@@ -239,24 +239,6 @@ def main():
     parser = ArgParserEMSAFormer()
     args = parser.parse_args()
 
-    # get dataset path via nicr-cluster-utils
-    if args.dataset_path is None:
-        dataset_paths = []
-        for ds_name in parse_datasets(args.dataset):
-            if ds_name in ('hypersim',):
-                cluster_ds_name = f'nicr-scene-analysis-datasets-{ds_name}-v052'
-            if ds_name in ('scannet',):
-                cluster_ds_name = f'nicr-scene-analysis-datasets-{ds_name}-v051'
-            elif ds_name in ('cityscapes',):
-                cluster_ds_name = f'nicr-scene-analysis-datasets-{ds_name}-v050'
-            else:
-                cluster_ds_name = f'nicr-scene-analysis-datasets-{ds_name}-v030'
-
-            ds_path = str(load_dataset(cluster_ds_name))
-            dataset_paths.append(ds_path)
-
-        args.dataset_path = ':'.join(dataset_paths)
-
     # prepare results paths
     if not args.is_resumed_training:
         starttime = datetime.now().strftime('%Y_%m_%d-%H_%M_%S-%f')
@@ -297,10 +279,6 @@ def main():
                     # prepend 's ' to make sure wandb handles it correctly
                     v_str = f's {v_str}'
                 setattr(w_args, f'{k}_str', v_str)
-
-        if not is_wandb_available():
-            print("Weights & Biases is not available, forcing offline mode.")
-            args.wandb_mode = 'offline'
 
         wandb.init(
             dir=results_path,
