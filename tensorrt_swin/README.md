@@ -140,7 +140,7 @@ It is assumed that you have already installed the [EMSAFormer](https://github.co
 
     ```bash
     # Download the patch file to apply our modifications to the FasterTransformer repo
-    wget https://github.com/TUI-NICR/EMSAFormer/releases/download/release_2024_07_18/fastertransformer_nicr.patch
+    wget https://github.com/TUI-NICR/EMSAFormer/releases/download/release_2024_07_19/fastertransformer_nicr.patch
 
     # The patch file applies our modifications to the FasterTransformer repository
     # and only works with the FasterTransformer v5.2.1 release.

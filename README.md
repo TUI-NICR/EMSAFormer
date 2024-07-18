@@ -615,7 +615,7 @@ python main.py --help
 
 ## Changelog
 
-**July 18, 2024**
+**July 19, 2024**
 - add more recent and thinned-out environment (`emsaformer_environment_pytorch_2_3.yml`) 
   with Python 3.11 and latest tested PyTorch 2.3
 - add support for MPS device (see `--device mps` argument in `main.py`):
