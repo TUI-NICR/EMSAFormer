@@ -142,9 +142,12 @@ It is assumed that you have already installed the [EMSAFormer](https://github.co
     # Download the patch file to apply our modifications to the FasterTransformer repository
     wget https://github.com/TUI-NICR/EMSAFormer/releases/download/release_2024_07_19/fastertransformer_nicr.patch
 
+    # Navigate to the FasterTransformer directory
+    cd FasterTransformer/
+
     # The patch file applies our modifications to the FasterTransformer repository
     # and only works with the FasterTransformer v5.2.1 release.
-    git apply fastertransformer_nicr.patch
+    git apply ../fastertransformer_nicr.patch
     ```
 
 6. Build modified FasterTransformer:
@@ -186,6 +189,7 @@ It is assumed that you have already installed the [EMSAFormer](https://github.co
 
     # The output should similar to this:
     ├── FasterTransformer # FasterTransformer repository
+    ├── fastertransformer_nicr.patch # The patch file to apply our modifications to the FasterTransformer repository
     ├── README.md
     ├── tests # Some internal tests
     ├── trt_imagenet.py # Example script for ImageNet inference
