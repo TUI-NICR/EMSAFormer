@@ -131,9 +131,6 @@ It is assumed that you have already installed the [EMSAFormer](https://github.co
 
     # Clone the repository on the correct version
     git clone https://github.com/NVIDIA/FasterTransformer.git --branch release/v5.2.1_tag --single-branch
-
-    # Navigate to the FasterTransformer directory
-    cd FasterTransformer/
     ```
 
 5. Download and apply our patch file:
