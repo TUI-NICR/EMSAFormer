@@ -30,27 +30,6 @@ from .lr_scheduler import KNOWN_LR_SCHEDULERS
 from .optimizer import KNOWN_OPTIMIZERS
 
 
-class Range(object):
-    """
-    Helper for argparse to restrict floats to be in a specified range.
-    """
-    def __init__(self, start, end):
-        self.start = start
-        self.end = end
-
-    def __eq__(self, other):
-        return self.start <= other <= self.end
-
-    def __contains__(self, item):
-        return self.__eq__(item)
-
-    def __iter__(self):
-        yield self
-
-    def __repr__(self):
-        return f'[{self.start}, {self.end}]'
-
-
 class ArgParserEMSAFormer(ap.ArgumentParser):
     def __init__(self, *args, **kwargs):
         # force ArgumentDefaultsHelpFormatter as formatter_class is given
@@ -513,7 +492,7 @@ class ArgParserEMSAFormer(ap.ArgumentParser):
             help="Kernel size for non-maximum suppression to use for "
                  "filtering the predicting instance center heatmaps during "
                  "postprocessing. The order of postprocessing operations is: "
-                 "threshold, nms, opt. masking, top-k."
+                 "threshold, nms, top-k, opt. masking."
         )
         group.add_argument(
             '--instance-center-heatmap-apply-foreground-mask',
@@ -524,8 +503,8 @@ class ArgParserEMSAFormer(ap.ArgumentParser):
                  "actually belong to the foreground and, thus, prevents "
                  "instance pixels after offset shifting being assigned to "
                  "such an instance center later on. The order of "
-                 "postprocessing operations is: threshold, nms, opt. masking, "
-                 "top-k."
+                 "postprocessing operations is: threshold, nms, top-k, opt. "
+                 "masking."
         )
         group.add_argument(
             '--instance-center-heatmap-top-k',
@@ -533,7 +512,7 @@ class ArgParserEMSAFormer(ap.ArgumentParser):
             default=64,
             help="Top-k instances to finally select during postprocessing "
                  "instance center heatmaps. The order of postprocessing "
-                 "operations is: threshold, nms, opt. masking, top-k.")
+                 "operations is: threshold, nms, top-k, opt. masking.")
         group.add_argument(
             '--instance-center-encoding',
             type=str,
@@ -849,6 +828,13 @@ class ArgParserEMSAFormer(ap.ArgumentParser):
                  "disabled. Use ':' to combine the paths for combined datasets."
         )
         group.add_argument(
+            '--split',
+            type=str,
+            default='train',
+            help="Dataset split(s) to use for training. Use ':' to combine "
+                 "the splits for combined datasets."
+        )
+        group.add_argument(
             '--raw-depth',
             action='store_true',
             default=False,
@@ -888,14 +874,14 @@ class ArgParserEMSAFormer(ap.ArgumentParser):
         )
         group.add_argument(
             '--subset-train',
-            type=float,
-            default=1.0,
-            choices=Range(0.0, 1.0),
-            help="Relative value to train on a subset of the train data. For "
-                 "example if `subset-train`=0.2 and we have 100 train images, "
-                 "then we train only on 20 images. These 20 images are chosen "
-                 "randomly each epoch, except if `subset-deterministic` is "
-                 "set."
+            type=str,
+            default='1.0',
+            help="Limit train data to a subset, e.g., '0.1' will limit the "
+                 "data for training to only 10 percent of the total number of "
+                 "samples, '1.0' will use all data. Use ':' to combine"
+                 "subset parameters for concatenated datasets."
+                 "Note, the subset is chosen randomly each epoch, except if "
+                 "`subset-deterministic` is passed."
         )
         group.add_argument(
             '--subset-deterministic',
@@ -929,14 +915,42 @@ class ArgParserEMSAFormer(ap.ArgumentParser):
             help="Do not force mm for SUNRGB-D depth values. Use this option "
                  "to evaluate weights of the EMSANet paper on SUNRGB-D."
         )
+        group.add_argument(
+            '--sunrgbd-instances-version',
+            type=str,
+            default='panopticndt',
+            choices=('emsanet', 'panopticndt', 'anyold'),
+            help="We have created two versions of SUNRGB-D with instance "
+                 "annotations extracted from existing 3d-box annotations: "
+                 "'emsanet': this initial version was created for training the "
+                 "original EMSANet - see IJCNN 2022 paper; "
+                 "'panopticndt': referes to a revised version that was created "
+                 "along with the work for PanopticNDT - see IROS 2023 paper, "
+                 "it refines large parts of the instance extraction (see "
+                 "changelog for v0.6.0 of the nicr-scene-analysis-datasets "
+                 "package for details). "
+                 "Additionally, 'anyold' can be used can be used to force "
+                 "loading any SUNRGB-D dataset prepared with a dataset package "
+                 "version < v0.7.0; however, use this value only if you know "
+                 "what you are doing!"
+        )
         # -> Hypersim related parameters
+        # TODO: can be removed from codebase later
         group = self.add_argument_group('Dataset and Augmentation -> Hypersim')
+        group.add_argument(
+            '--hypersim-use-old-depth-stats',
+            action='store_true',
+            default=False,
+            help="Use old (v030) depth stats for Hypersim dataset. Enable "
+                 "this argument if you load weights created earlier than "
+                 "Apr. 28, 2022."
+        )
         group.add_argument(
             '--hypersim-subsample',
             type=int,
             default=1,
             choices=(1, 2, 5, 10, 20),
-            help="Subsample to use for ScanNet dataset for training."
+            help="Subsample to use for Hypersim dataset for training."
         )
 
         # validation/evaluation ------------------------------------------------
@@ -951,7 +965,8 @@ class ArgParserEMSAFormer(ap.ArgumentParser):
             '--visualize-validation',
             default=False,
             action='store_true',
-            help="Whether the validation images should be visualized."
+            help="Whether the validation should be visualized. Consider adding "
+                 "`--debug` to visalize the ground-truth side outputs as well."
         )
         group.add_argument(
             '--visualization-output-path',
@@ -1154,6 +1169,13 @@ class ArgParserEMSAFormer(ap.ArgumentParser):
 
         # other parameters ----------------------------------------------------
         self.add_argument(
+            '--device',
+            type=str,
+            default='cuda',
+            choices=('cuda', 'cpu', 'mps'),
+            help="Device to use for training and validation."
+        )
+        self.add_argument(
             '--hostname',
             type=str,
             default=socket.gethostname(),
@@ -1164,6 +1186,12 @@ class ArgParserEMSAFormer(ap.ArgumentParser):
             type=str,
             default='',
             help="Just to add some additional notes for this run."
+        )
+        self.add_argument(
+            '--disable-progress-bars',
+            action='store_true',
+            default=False,
+            help="Disables all tqdm progress bars (currently only in main.py)."
         )
 
     def parse_args(self, args=None, namespace=None, verbose=True):
@@ -1380,6 +1408,13 @@ class ArgParserEMSAFormer(ap.ArgumentParser):
                 _warn("Forced `normal-no-multiscale-supervision` as "
                       f"`normal-decoder` is '{pa.normal_decoder}'.")
 
+        # handle new/old format for '--subset-train'
+        if ':' in pa.subset_train:
+            # subset given for concatenated datasets, e.g., 0.5:1.0
+            pa.subset_train = tuple(map(float, pa.subset_train.split(':')))
+        else:
+            pa.subset_train = float(pa.subset_train)
+
         # evaluation ----------------------------------------------------------
         if pa.validation_full_resolution:
             if not any(d in pa.dataset for d in ('cityscapes', 'hypersim')):
@@ -1427,6 +1462,22 @@ class ArgParserEMSAFormer(ap.ArgumentParser):
                     f"'{pa.visualization_output_path}' already exists. Please "
                     "provide a different path."
                 )
+
+        # TODO: can be removed from codebase later
+        if all((pa.validation_only,
+                'hypersim' in pa.dataset,
+                pa.weights_filepath is not None,
+                not pa.hypersim_use_old_depth_stats)):
+
+            from datetime import datetime
+
+            t_weights_created = os.path.getctime(pa.weights_filepath)
+            t_fix = datetime.strptime('2022.04.28', '%Y.%m.%d').timestamp()
+            if t_weights_created < t_fix:
+                _warn("Detected Hypersim checkpoint created earlier than "
+                      "Apr. 28, 2022. Consider adding "
+                      "`hypersim-use-old-depth-stats` argument to ensure "
+                      "correct depth stats.")
 
         # other parameters ----------------------------------------------------
         if pa.debug:

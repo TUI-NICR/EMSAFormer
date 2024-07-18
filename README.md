@@ -1,7 +1,7 @@
 # EMSAFormer: Efficient Multi-Task Scene Analysis with RGB-D Transformers
 This repository contains the code to our paper 
 "EMSAFormer: Efficient Multi-Task Scene Analysis with RGB-D Transformers" 
-([arXiv](https://arxiv.org/pdf/2306.05242.pdf))
+([IEEE Xplore](https://ieeexplore.ieee.org/document/10191977), [arXiv](https://arxiv.org/pdf/2306.05242.pdf))
 
 EMSAFormer builds on top of our previous work, 
 [EMSANet](https://github.com/TUI-NICR/EMSANet), to efficiently perform tasks 
@@ -22,13 +22,26 @@ The source code is published under Apache 2.0 license, see
 [license file](LICENSE) for details.
 
 If you use the source code or the network weights, please cite the following 
-paper ([arXiv](https://arxiv.org/pdf/2306.05242.pdf)):
+paper ([IEEE Xplore](https://ieeexplore.ieee.org/document/10191977), [arXiv](https://arxiv.org/abs/2306.05242)):
+
 
 > Fischedick, S., Seichter, D., Schmidt, R., Rabes, L., Gross, H.-M.
 *Efficient Multi-Task Scene Analysis with RGB-D Transformers*,
-to appear in IEEE International Joint Conference on Neural Networks (IJCNN), 2023.
+in IEEE International Joint Conference on Neural Networks (IJCNN), pp. 1-10, 2023.
+
+<details>
+<summary>BibTeX</summary>
 
 ```bibtex
+@inproceedings{emsaformer2023ijcnn,  
+  title={{Efficient Multi-Task Scene Analysis with RGB-D Transformers}},
+  author={Fischedick, S{\"o}hnke and Seichter, Daniel and Schmidt, Robin and Rabes, Leonard and Gross, Horst-Michael},
+  booktitle={IEEE International Joint Conference on Neural Networks (IJCNN)},
+  year={2023},
+  pages={1-10},
+  doi={10.1109/IJCNN54540.2023.10191977}
+}
+
 @article{emsaformer2023,
   title={Efficient {Multi-Task} Scene Analysis with {RGB-D} Transformers},
   author={S{\"o}hnke B. Fischedick and Daniel Seichter and Robin Schmidt and Leonard Rabes and Horst-Michael Gross},
@@ -36,12 +49,13 @@ to appear in IEEE International Joint Conference on Neural Networks (IJCNN), 202
   year={2023}
 }
 ```
-Note that the preprint was accepted to be published in IEEE International Joint 
-Conference on Neural Networks (IJCNN) 2023.
 
+Note that the preprint was accepted to be published in IEEE International Joint Conference on Neural Networks (IJCNN) 2023.
+
+</details>
 
 ## Content
-There are subsection for different things to do:
+
 - [Installation](#installation): Set up the environment.
 - [Results & Weights](#results-weights): Overview about major results and pretrained network weights.
 - [Evaluation](#evaluation): Reproduce results reported in our paper.
@@ -64,18 +78,28 @@ There are subsection for different things to do:
 
 2. Create conda environment and install all dependencies:
     ```bash
-    # option 1: create conda environment from provided YAML file with PyTorch 2.0 (original publication)
+    # option 1: create conda environment from provided YAML file with Python 3.11.0 and PyTorch 2.3 (latest tested version)
+
+    conda env create -f emsaformer_environment_pytorch_2_3.yml
+    conda activate emsaformer
+    ```
+
+    ```bash
+    # option 2: create conda environment from provided YAML file with Python 3.8.16 and PyTorch 2.0 (original publication)
+
     conda env create -f emsaformer_environment_pytorch_2_0.yml
     conda activate emsaformer
     ```
 
     ```bash
-    # option 2: create new conda environment manually
+    # option 3: create new conda environment manually (original publication)
+
     conda create -n emsaformer python=3.8 anaconda
     conda activate emsaformer
 
     # remaining conda dependencies
-    conda install pytorch torchvision torchaudio pytorch-cuda=11.7 -c pytorch -c nvidia
+    # note: PyTorch 2.0+ works as well
+    conda install pytorch==2.0.0 torchvision==0.15.0 torchaudio==2.0.0 pytorch-cuda=11.7 -c pytorch -c nvidia
 
     # remaining pip dependencies
     python -m pip install 'opencv-python==4.2.0.34'    # newer versions may work as well
@@ -86,10 +110,10 @@ There are subsection for different things to do:
 3. Install submodule packages:
     ```bash
     # dataset package
-    python -m pip install -e ./lib/nicr-scene-analysis-datasets[withpreparation]
+    python -m pip install -e "./lib/nicr-scene-analysis-datasets[withpreparation]"
 
     # multitask scene analysis package
-    python -m pip install -e ./lib/nicr-multitask-scene-analysis
+    python -m pip install -e "./lib/nicr-multitask-scene-analysis"
     ```
 
 4. Prepare datasets:  
@@ -98,14 +122,16 @@ There are subsection for different things to do:
     [SUNRGB-D](https://rgbd.cs.princeton.edu/), and
     [ScanNet](http://www.scan-net.org/). 
 
-    Please follow the instructions given in `./lib/nicr-scene-analysis-datasets` or [HERE](https://github.com/TUI-NICR/nicr-scene-analysis-datasets/tree/v0.5.4) to prepare the datasets. 
+    Please follow the instructions given in `./lib/nicr-scene-analysis-datasets` or [HERE](https://github.com/TUI-NICR/nicr-scene-analysis-datasets/tree/v0.7.0) to prepare the datasets.
     In the following, we assume that they are stored at `./datasets`
-
+    
+    > Use `--instances-version emsanet` when preparing the SUNRGB-D dataset to reproduce reported results. 
+      See notes in evaluation section for more details.
 
 
 ## Results & Weights
 We provide the weights for our selected EMSAFormer-SwinV2-T-128-Multi-Aug
-(with a modified SwinV2-T backbone) on NYUv2 and SUNRGB-D and ScanNet:
+(with a modified SwinV2-T backbone) on NYUv2, SUNRGB-D, and ScanNet:
 
 | Dataset                 | Model                                   | mIoU  | mIoU*  | PQ    | RQ    | SQ    | MAAE  | bAcc  | FPS (50W/30W)**        | URL  |
 |-------------------------|-----------------------------------------|:-----:|:------:|:-----:|:-----:|:-----:|:-----:|:-----:|:------------:|------|
@@ -128,7 +154,7 @@ power consumption of 50W and 30W.
 \*\*\* Orientations are not available for ScanNet
 
 The checkpoints denoted by "(Sem(SegFormer))" use a smaller MLP-based decoder
-for performing semantic segmentation, instead of the EMSANet decoder.
+for performing semantic segmentation, instead of the EMSANet decoder.  
 Download and extract the models to `./trained_models`.
 
 ## Evaluation
@@ -235,12 +261,32 @@ Validation results:
 ```
 
 ### SUNRGB-D
+> We refactored and updated instance annotation creation from 3D boxes for 
+  SUNRGB-D in `nicr-scene-analysis-datasets` == 0.6.0. The resulting annotations 
+  feature a lot of more instances; however, it is also changing the ground 
+  truth for the evaluation below. For more details and a comparison between 
+  both versions, we refer to our follow-up work Panoptic 
+  Mapping([GitHub](https://github.com/TUI-NICR/panoptic-mapping), 
+  [arXiv](https://arxiv.org/abs/2309.13635)) that proposes the refined 
+  annotations.
+  To reproduce reported EMSANet paper results either use 
+  `nicr-scene-analysis-datasets` >= 0.7.0 and prepare the SUNRGB-D dataset with 
+  `--instances-version emsanet` (or go back with both reposities and use 
+  `nicr-scene-analysis-datasets` <= 0.6.0).
+  For backward compatibility, i.e., to still be able to load a SUNRGB-D dataset 
+  prepared with `nicr-scene-analysis-datasets` < 0.7.0, you can pass 
+  `--sunrgbd-instances-version anyold` to `main.py`; however, use this only if
+  you know what you are doing!  
+  We recommend re-preparing the SUNRGB-D dataset 
+  with `nicr-scene-analysis-datasets` >= 0.7.0 as described above to avoid 
+  any confusion.
 
 To evaluate on SUNRGB-D with EMSANet decoder (for semantic segmentation), run:
 ```bash
 python main.py \
     --dataset sunrgbd \
     --dataset-path ./datasets/sunrgbd \
+    --sunrgbd-instances-version emsanet \
     --sunrgbd-depth-do-not-force-mm \
     --tasks semantic scene instance orientation \
     --enable-panoptic \
@@ -289,6 +335,7 @@ To evaluate on SUNRGB-D with MLP-based decoder (for semantic segmentation), run:
 python main.py \
     --dataset sunrgbd \
     --dataset-path ./datasets/sunrgbd \
+    --sunrgbd-instances-version emsanet \
     --sunrgbd-depth-do-not-force-mm \
     --tasks semantic scene instance orientation \
     --enable-panoptic \
@@ -462,7 +509,7 @@ python main.py \
     --wandb-mode disabled
 ```
 Similarly, the same can be applied to SUNRGB-D and ScanNet
-(see parameters in [evaluation](#evaluation) section).
+(see parameters in [evaluation section](#evaluation)).
 > Note that the `inference_dataset.py` script can be used to predict on the 
 test data of ScanNet and write the results in the format which is required 
 for the official evaluation servers.
@@ -503,11 +550,19 @@ assigned to the void class.
 ### Time Inference
 To reproduce the timings on an NVIDIA Jetson AGX Orin 32GB, a custom TensorRT 
 extension, based on NVIDIA's [FasterTransformer](https://github.com/NVIDIA/FasterTransformer), 
-is required. Additionally, some modifications for the ONNX export are required,
-which enable the usage of ONNX for inference with TensoRT.
-Please note that the custom TensorRT extension is not available yet, as we are
-actively working on its release. Updates regarding its availability will be 
-provided in the near future.
+is required. 
+Additionally, some modifications for the ONNX export are required to allow the export of arbitrary Swin-Transformer-based models.
+
+Please follow the instructions given in [`tensorrt_swin/README.md`](tensorrt_swin/README.md) to build the 
+proposed extension.
+Subsequently, you can run `inference_time.bash` to reproduce the reported timings (see table above).
+
+Below, we compare the inference timings of the EMSAFormer with PyTorch and with TensorRT on the NVIDIA Jetson AGX Orin 32GB.
+
+<img src="./doc/nyuv2_timings_orin01_semantic-decoder_emsanet_trtexec.png" width="48%" /><img src="./doc/nyuv2_timings_orin01_semantic-decoder_segformermlp_trtexec.png" width="48%" />
+
+> Note that our custom TensorRT extension also works with newer TensorRT versions.
+  For more details, we refer to the [`tensorrt_swin/README.md`](tensorrt_swin/README.md).
 
 ## Training
 Use `main.py` to train EMSAformer on NYUv2, SUNRGB-D, ScanNet, or any other 
@@ -548,6 +603,10 @@ python main.py \
     --wandb-mode disabled
 ```
 
+> To reproduce the results reported in our EMSANet paper for SUNRGB-D, make
+sure to prepare and use the correct dataset version for SUNRGB-D (see note in 
+[evaluation section](#sunrgb-d)).
+
 For more options, we refer to `./emsaformer/args.py` or simply run:
 
 ```bash
@@ -555,6 +614,29 @@ python main.py --help
 ```
 
 ## Changelog
+
+**July 18, 2024**
+- add more recent and thinned-out environment (`emsaformer_environment_pytorch_2_3.yml`) 
+  with Python 3.11 and latest tested PyTorch 2.3
+- add support for MPS device (see `--device mps` argument in `main.py`):
+    - only tested for inference
+    - might be slower as not all instance postprocessing operations are 
+      supported yet (we use some CPU fallbacks)
+- add support for CPU device (see `--device cpu` argument in `main.py`)
+- add `disable-progress-bars` argument to `main.py`
+- fix bug in visualization (only with MPS/CPU device)
+- visualize ground truth in fullres as well
+- visualize semantic and instance of ground-truth panoptic separately
+- some doc string fixes
+- dump instance meta dicts as well when visualizing validation
+- small fix in dataset path parsing (do not force lower case)
+- individual subset selection with `--subset-train parameter` in `main.py`
+- add possibility to visualize side outputs during validation
+- enable weight loading for single-task semantic (similar to ESANet) from 
+- enable loading weights from (pre-)training with orientation task
+  multi-task checkpoint (e.g., trained EMSANet)
+- bump `lib/nicr-scene-analysis-datasets` to version 0.7.0
+- bump `lib/nicr-multitask-scene-analysis` to version 0.2.3
 
 **June 02, 2023**
 - initial code release for original publication
