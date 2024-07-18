@@ -139,7 +139,7 @@ It is assumed that you have already installed the [EMSAFormer](https://github.co
 5. Download and apply our patch file:
 
     ```bash
-    # Download the patch file to apply our modifications to the FasterTransformer repo
+    # Download the patch file to apply our modifications to the FasterTransformer repository
     wget https://github.com/TUI-NICR/EMSAFormer/releases/download/release_2024_07_19/fastertransformer_nicr.patch
 
     # The patch file applies our modifications to the FasterTransformer repository
@@ -185,7 +185,7 @@ It is assumed that you have already installed the [EMSAFormer](https://github.co
     tree -L 1
 
     # The output should similar to this:
-    ├── FasterTransformer # FasterTransformer repo
+    ├── FasterTransformer # FasterTransformer repository
     ├── README.md
     ├── tests # Some internal tests
     ├── trt_imagenet.py # Example script for ImageNet inference
