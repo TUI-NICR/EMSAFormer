@@ -23,7 +23,7 @@ import torch
 torch.backends.cudnn.benchmark = True
 torch.backends.cudnn.deterministic = True
 from torchmetrics import MeanMetric
-from tqdm import tqdm
+from tqdm import tqdm as tqdm_
 import wandb
 
 from nicr_mt_scene_analysis.checkpointing import CheckpointHelper
@@ -33,6 +33,24 @@ from nicr_mt_scene_analysis.logging import CSVLogger
 from nicr_mt_scene_analysis.testing.onnx import export_onnx_model
 from nicr_mt_scene_analysis.utils import cprint
 from nicr_mt_scene_analysis.utils import cprint_step
+
+# internal stuff, if not available, use fallbacks to ensure that the script
+# runs without these dependencies
+try:
+
+    from nicr_cluster_utils.datasets import load_dataset
+    from nicr_cluster_utils.utils import rename_job
+    from nicr_cluster_utils.utils import get_job_id
+    from nicr_cluster_utils.utils.wandb_integration import is_wandb_available
+
+except ImportError:
+
+    _return_none = lambda *args, **kwargs: None
+    load_dataset = _return_none
+    rename_job = _return_none
+    get_job_id = _return_none
+
+    is_wandb_available = lambda *args, **kwargs: True
 
 from emsaformer.args import ArgParserEMSAFormer
 from emsaformer.data import get_datahelper
@@ -239,6 +257,38 @@ def main():
     parser = ArgParserEMSAFormer()
     args = parser.parse_args()
 
+    if args.disable_progress_bars:
+        # dummy tqdm function that only prints the description and step number
+        def tqdm(obj, **kwargs):
+            if 'desc' in kwargs:
+                print(kwargs['desc'],
+                      f"({kwargs.get('total', 'unknown number of')} steps)")
+            return obj
+    else:
+        # use tqdm
+        tqdm = tqdm_
+
+    # get dataset path via nicr-cluster-utils
+    if args.dataset_path is None:
+        dataset_paths = []
+        for ds in parse_datasets(args.dataset):
+            ds_name = ds['name']
+            if ds_name in ('sunrgbd',):
+                cluster_ds_name = f'nicr-scene-analysis-datasets-{ds_name}-v070'
+            elif ds_name in ('hypersim',):
+                cluster_ds_name = f'nicr-scene-analysis-datasets-{ds_name}-v052'
+            elif ds_name in ('scannet',):
+                cluster_ds_name = f'nicr-scene-analysis-datasets-{ds_name}-v051'
+            elif ds_name in ('cityscapes',):
+                cluster_ds_name = f'nicr-scene-analysis-datasets-{ds_name}-v050'
+            else:
+                cluster_ds_name = f'nicr-scene-analysis-datasets-{ds_name}-v030'
+
+            ds_path = str(load_dataset(cluster_ds_name))
+            dataset_paths.append(ds_path)
+
+        args.dataset_path = ':'.join(dataset_paths)
+
     # prepare results paths
     if not args.is_resumed_training:
         starttime = datetime.now().strftime('%Y_%m_%d-%H_%M_%S-%f')
@@ -279,6 +329,10 @@ def main():
                     # prepend 's ' to make sure wandb handles it correctly
                     v_str = f's {v_str}'
                 setattr(w_args, f'{k}_str', v_str)
+
+        if not is_wandb_available():
+            print("Weights & Biases is not available, forcing offline mode.")
+            args.wandb_mode = 'offline'
 
         wandb.init(
             dir=results_path,
@@ -364,6 +418,7 @@ def main():
         batch = next(iter(data.train_dataloader))
         batch = {k: v for k, v in batch.items() if torch.is_tensor(v)}
         fp = os.path.join(results_path, 'model.onnx')
+        # TODO: export for Dropout2D (feature_dropout) to enable mode PRESERVE
         if export_onnx_model(fp, model, (batch, {}),
                              training_mode=TrainingMode.EVAL,
                              force_export=False,
@@ -389,7 +444,7 @@ def main():
         args,
         model=model,
         task_helpers=task_helpers,
-        device=torch.device('cuda'),
+        device=torch.device(args.device),
         compile_model=args.compile_model,
     )
 
@@ -414,7 +469,7 @@ def main():
         warnings.warn(
             "No checkpoints will be saved. Please provide the metrics by which "
             "you want to checkpoint the model weights with "
-            "`--checkpoinintg-metrics`."
+            "`--checkpointing-metrics`."
         )
     checkpoint_helper = CheckpointHelper(
         metric_names=args.checkpointing_metrics,
@@ -472,6 +527,16 @@ def main():
         if args.visualize_validation:
             print("Writing visualizations to: "
                   f"'{args.visualization_output_path}'.")
+            os.makedirs(args.visualization_output_path, exist_ok=True)
+
+            # dump args
+            with open(os.path.join(args.visualization_output_path,
+                                   'args.json'), 'w') as f:
+                json.dump(vars(args), f, sort_keys=True, indent=4)
+            with open(os.path.join(args.visualization_output_path,
+                                   'argsv.txt'), 'w') as f:   # should be argv
+                f.write(shlex.join(sys.argv))
+                f.write('\n')
 
         # use shared color generators to ensure consistent colors and to speed
         # up visualization
@@ -489,7 +554,7 @@ def main():
                 if args.visualize_validation:
                     output_path = os.path.join(
                         args.visualization_output_path,
-                        args.validation_split
+                        args.validation_split.replace(':', '+')
                     )
                     visualize(
                         output_path=output_path,

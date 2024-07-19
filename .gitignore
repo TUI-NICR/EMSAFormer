@@ -124,4 +124,11 @@ results*
 lsf_*
 inference_results*
 visualized_outputs*
+
+tensorrt_swin/FasterTransformer/
+tensorrt_swin/vision/
+*.in
+
+# Datasets
+datasets/
 .pytest_cache/

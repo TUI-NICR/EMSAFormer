@@ -97,7 +97,7 @@ def main():
     # assert all(x in args.input_modalities for x in ('rgb', 'depth', 'rgbd')), \
     #     "Only RGBD inference supported so far"
 
-    device = torch.device('cuda')
+    device = torch.device(args.device)
 
     # data and model
     data = get_datahelper(args)
@@ -106,7 +106,8 @@ def main():
 
     # load weights
     print(f"Loading checkpoint: '{args.weights_filepath}'")
-    checkpoint = torch.load(args.weights_filepath)
+    checkpoint = torch.load(args.weights_filepath,
+                            map_location=torch.device('cpu'))
     state_dict = checkpoint['state_dict']
     if 'epoch' in checkpoint:
         print(f"-> Epoch: {checkpoint['epoch']}")

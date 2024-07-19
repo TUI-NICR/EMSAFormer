@@ -398,6 +398,10 @@ def write_scannet_instance_output(
                     _semantic_and_instance_to_panoptic_bgr(gt_sem, gt_ins)
                 )
 
+    # TODO: instance prediction with gt mask (where to get the semantic from?)
+    # prediction['instance_segmentation_gt_foreground_fullres']
+    # prediction['instance_segmentation_gt_meta']
+
     # panoptic instance prediction
     path = os.path.join(output_path, 'pred_path_panoptic_instance')
     mask_dir = 'predicted_masks'
@@ -536,6 +540,8 @@ def write_mapping_output(
         with open(os.path.join(path_i, filename_i), 'w') as f:
             json.dump(meta_i, f, sort_keys=True, indent=4)
 
+    # TODO: when required: panoptic instance orientation
+
     # scene class prediction
     scene_scores = prediction['scene_class_score']
     scene_scores = torch.clamp(scene_scores, min=0, max=_SCORE_MAX)
@@ -573,7 +579,7 @@ def main():
     os.makedirs(args.inference_output_path, exist_ok=True)
 
     # device
-    device = torch.device('cuda')
+    device = torch.device(args.device)
 
     # data ---------------------------------------------------------------------
     # note that args.validation_scannet_subsample is used for ScanNet in test
@@ -669,7 +675,8 @@ def main():
 
     # load weights
     print(f"Loading checkpoint: '{args.weights_filepath}'.")
-    checkpoint = torch.load(args.weights_filepath, map_location='cpu')
+    checkpoint = torch.load(args.weights_filepath,
+                            map_location=torch.device('cpu'))
     if 'epoch' in checkpoint:
         print(f"-> Epoch: {checkpoint['epoch']}")
     if args.debug and 'logs' in checkpoint:
