@@ -139,6 +139,9 @@ def export_to_onnx(model, input_data, onnx_name, use_swin_extension=False,
         patched_model, input_data, onnx_name,
         verbose=False, do_constant_folding=True,
         custom_opsets=custom_opsets,
+        # pytorch 2.9 changed dynamo=True to its default. this breaks
+        # our custom tracing, which is why we explicitly set it to False.
+        dynamo=False,
         **kwargs
     )
     assert os.path.isfile(onnx_name)

@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """
+TODO: Adapt  these test for emsaformer
 .. codeauthor:: Daniel Seichter <daniel.seichter@tu-ilmenau.de>
 """
 import os
@@ -7,6 +8,9 @@ import os
 from nicr_mt_scene_analysis.testing.onnx import export_onnx_model
 import pytest
 import torch
+
+from nicr_mt_scene_analysis.data.preprocessing.base import APPLIED_PREPROCESSING_KEY
+from nicr_mt_scene_analysis.data.preprocessing.resize import Resize
 
 from emsaformer.args import ArgParserEMSAFormer
 from emsaformer.data import get_dataset
@@ -82,6 +86,15 @@ def model_test_emsanet(tasks,
             batch['rgb_fullres'] = batch['rgb'].clone()
         if 'depth' in batch:
             batch['depth_fullres'] = batch['depth'].clone()
+
+    # Add applied preprocessing to batch which is required for postprocessing
+    batch[APPLIED_PREPROCESSING_KEY] = [
+        [{
+            'type': Resize.__name__,
+            'valid_region_slice_y': slice(0, input_shape[0]),
+            'valid_region_slice_x': slice(0, input_shape[1]),
+        },]
+    ]*batch_size
 
     # apply model
     outputs = model(batch, do_postprocessing=do_postprocessing)

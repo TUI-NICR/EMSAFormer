@@ -131,4 +131,3 @@ tensorrt_swin/vision/
 
 # Datasets
 datasets/
-.pytest_cache/

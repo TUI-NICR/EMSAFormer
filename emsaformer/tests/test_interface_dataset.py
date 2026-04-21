@@ -23,10 +23,17 @@ def test_data_helper(dataset):
         input_modalities = ('rgb',)
     else:
         input_modalities = ('rgb', 'depth')
+    split_train = 'train'
+    split_valid = 'valid'
+    if dataset == 'ade20k':
+        split_train = 'train_panoptic_2017'
+        split_valid = 'valid_panoptic_2017'
     args = parser.parse_args(
         ['--dataset', dataset,
          '--dataset-path', DATASET_PATH_DICT[dataset],
-         '--input-modalities', *input_modalities],
+         '--input-modalities', *input_modalities,
+         '--split', split_train,
+         '--validation-split', split_valid],
         verbose=False)
 
     data = get_datahelper(args)

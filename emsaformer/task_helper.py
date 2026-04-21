@@ -28,6 +28,8 @@ def get_task_helpers(
             n_threads=4,
             debug=False
         )
+        if args.debug:
+            print("Semantic class weights:", class_weights)
         task_helper.append(
             SemanticTaskHelper(
                 n_classes=dataset.semantic_n_classes_without_void,

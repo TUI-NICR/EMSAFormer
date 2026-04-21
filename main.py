@@ -311,6 +311,7 @@ def main():
     print(f"Writing results to '{results_path}'.")
 
     # append some information to args
+    args.job_id = get_job_id()  # DO NOT PUBLISH
     args.results_path = results_path
     args.artifacts_path = artifacts_path
     args.checkpoints_path = checkpoints_path
@@ -351,6 +352,9 @@ def main():
         args.wandb_id = wandb.run.id
         args.wandb_url = wandb.run.url
 
+        # rename job on cluster
+        rename_job(wandb.run.name)
+
         # dump args ------------------------------------------------------------
         if not args.is_resumed_training:
             # argv only if not resuming
@@ -362,7 +366,7 @@ def main():
             json.dump(vars(args), f, sort_keys=True, indent=4)
 
     # Data & Model -------------------------------------------------------------
-    cprint_step(f"Get model and dataset")
+    cprint_step("Get model and dataset")
     # get datahelper
     data = get_datahelper(args)
 
@@ -382,7 +386,7 @@ def main():
         if 'epoch' in checkpoint:
             print(f"-> Epoch: {checkpoint['epoch']}")
         if args.debug and 'logs' in checkpoint:
-            print(f"-> Logs/Metrics:")
+            print("-> Logs/Metrics:")
             pprint(checkpoint['logs'])
 
         load_weights(args, model, state_dict, verbose=True)
@@ -410,7 +414,7 @@ def main():
 
     # export onnx model to be able to debug the model's structure
     if args.debug:
-        cprint_step(f"Export ONNX model")
+        cprint_step("Export ONNX model")
         # use 'EXPORT_ONNX_MODELS=true python ...' to export the model
         from torch.onnx import TrainingMode
 
@@ -450,7 +454,7 @@ def main():
 
     # check for resumed training
     if args.resume_ckpt_filepath is not None:
-        cprint_step(f"Resume training")
+        cprint_step("Resume training")
         checkpoint = torch.load(args.resume_ckpt_filepath,
                                 map_location=torch.device('cpu'))
         print(f"Checkpoint: '{args.resume_ckpt_filepath}'")
@@ -481,7 +485,7 @@ def main():
         # ensure that crucial parts (data, forward, metrics, ...) are working
         # as expected, the check is done by forwarding a single batch of all
         # dataloaders WITHOUT backpropagation.
-        cprint_step(f"Perform sanity check")
+        cprint_step("Perform sanity check")
 
         # disable forward stats tracking (e.g., batchnorm)
         for m in model.modules():
@@ -518,11 +522,11 @@ def main():
         run.reset()
 
         # everything seems to work
-        print(f"Fine.")
+        print("Fine.")
 
     # Validation ---------------------------------------------------------------
     if args.validation_only:
-        cprint_step(f"Run validation only")
+        cprint_step("Run validation only")
 
         if args.visualize_validation:
             print("Writing visualizations to: "
@@ -574,7 +578,7 @@ def main():
         return
 
     # Training -----------------------------------------------------------------
-    cprint_step(f"Start training")
+    cprint_step("Start training")
     # overfitting
     if args.overfit_n_batches > 0:
         # force overfitting (training+validation) to overfit_n_batches batches
@@ -604,12 +608,15 @@ def main():
             epoch_logs.update(metrics)
 
             # validation
-            if (args.validation_force_interval is None) or (epoch == 0):
-                force = False
-            else:
-                force = (epoch % args.validation_force_interval) == 0
+            force = False
+            if args.validation_force_interval is not None:
+                # force validation at given interval
+                force = ((epoch + 1) % args.validation_force_interval) == 0
+            if (epoch + 1) == args.n_epochs:
+                # it is the last epoch, force validation
+                force = True
 
-            if (epoch >= (args.n_epochs * args.validation_skip)) or force:
+            if ((epoch + 1) >= (args.n_epochs * args.validation_skip)) or force:
                 run.set_inference_mode()
                 # we have multiple valid datasets due to multiple resolutions
                 batch_idx = 0
@@ -686,12 +693,14 @@ def main():
             lr_scheduler.step()
 
             # resume checkpoint
-            if ((epoch % args.resume_ckpt_interval) == 0 and epoch > 0) or \
-                    (epoch == (args.n_epochs-1)):
+            if (
+                ((epoch + 1) % args.resume_ckpt_interval) == 0 or
+                ((epoch + 1) == (args.n_epochs))
+            ):
                 # save checkpoint containing state dict, optimizer, and lr
                 # scheduler
                 ckpt_filepath = os.path.join(checkpoints_path,
-                                             f'ckpt_resume.pth')
+                                             'ckpt_resume.pth')
 
                 ckpt = {
                     'state_dict': model.state_dict(),
@@ -745,7 +754,7 @@ def main():
     with open(os.path.join(results_path, 'finished'), 'w') as f:
         pass
     csv_logger.write()
-    cprint_step(f"Done")
+    cprint_step("Done")
 
 
 if __name__ == '__main__':

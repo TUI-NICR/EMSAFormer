@@ -3,9 +3,8 @@
 .. codeauthor:: Soehnke Fischedick <soehnke-benedikt.fischedick@tu-ilmenau.de>
 .. codeauthor:: Daniel Seichter <daniel.seichter@tu-ilmenau.de>
 """
-from typing import Optional, Iterable, Sequence, Tuple, Union
+from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple, Union
 
-from collections import OrderedDict
 from copy import deepcopy
 from dataclasses import asdict
 from functools import partial
@@ -73,10 +72,10 @@ class ScanNetWithOrientations(ScanNet):
         #     )
         return super().__getitem__(idx)
 
-    def copy_use_orientations_from(self, other_datataset):
+    def copy_use_orientations_from(self, other_dataset):
         # we need another dataset to copy the 'use_orientations' information
         # from for each semantic class
-        other_semantic_label_list = other_datataset.config.semantic_label_list
+        other_semantic_label_list = other_dataset.config.semantic_label_list
 
         # create new semantic label list
         new_semantic_label_list = SemanticLabelList()
@@ -100,7 +99,7 @@ class ScanNetWithOrientations(ScanNet):
             warnings.warn(
                 f"{self.__class__.__name__}: Could not copy 'use_orientations' "
                 f"information for classes: {missing_classes} from dataset "
-                f"{other_datataset.__class__.__name__}."
+                f"{other_dataset.__class__.__name__}."
             )
 
         # replace current dataset config
@@ -116,7 +115,7 @@ def parse_datasets(
     datasets_str: str,
     datasets_path_str: Optional[str] = None,
     datasets_split_str: Optional[str] = None
-):
+) -> List[Dict[str, Any]]:
     misconfiguration_error = ValueError(
         "Detected dataset misconfiguration, i.e., different number of "
         f"datasets, paths or splits. Datasets: '{datasets_str}', paths: "
@@ -124,24 +123,27 @@ def parse_datasets(
     )
 
     # ':' indicates joined datasets
-    dataset_names = datasets_str.lower().split(':')
+    dataset_specifiers = datasets_str.lower().split(':')
     if datasets_path_str is not None:
         dataset_paths = datasets_path_str.split(':')
-        if len(dataset_paths) != len(dataset_names):
+        if len(dataset_paths) != len(dataset_specifiers):
             raise misconfiguration_error
     if datasets_split_str is not None:
         dataset_splits = datasets_split_str.lower().split(':')
-        if len(dataset_splits) != len(dataset_names):
+        if len(dataset_splits) != len(dataset_specifiers):
             raise misconfiguration_error
 
     datasets = []
-    for i, dataset in enumerate(dataset_names):
-        # handle complex dataset format (e.g., 'sunrgbd[kv1,kv2]')
-        re_res = re.findall('([a-z0-9\\_\\-]+)\\[?([a-z0-9\\_\\-]*)\\]?',
-                            dataset)
-        assert len(re_res) == 1 and len(re_res[0]) == 2
+    for i, dataset in enumerate(dataset_specifiers):
+        # handle complex dataset specifiers (e.g., 'sunrgbd[kv1,kv2]' or
+        # 'ade20k^depthanything_v2__indoor_large[640x480]')
+        re_res = re.findall(
+            '([a-z0-9\\_\\-]+)\\^?([a-z0-9\\_\\-]*)\\[?([a-z0-9\\_\\-]*)\\]?',
+            dataset
+        )
+        assert len(re_res) == 1 and len(re_res[0]) == 3
         # parse results (dataset_name, cameras_str)
-        ds_name, ds_cameras = re_res[0]
+        ds_name, ds_depth_estimator, ds_cameras = re_res[0]
         # split cameras
         ds_cameras = ds_cameras.split(',') if ds_cameras else None
 
@@ -150,6 +152,7 @@ def parse_datasets(
             'name': ds_name,
             'path': None if datasets_path_str is None else dataset_paths[i],
             'split': None if datasets_split_str is None else dataset_splits[i],
+            'depth_estimator': ds_depth_estimator or None,
             'cameras': ds_cameras
         })
 
@@ -160,6 +163,8 @@ def get_dataset(args, split):
     # define default kwargs dict for all datasets
     dataset_depth_mode = 'raw' if args.raw_depth else 'refined'
     default_dataset_kwargs = {
+        'ade20k': {
+        },
         'cityscapes': {
             'depth_mode': dataset_depth_mode,
             'semantic_n_classes': 19,
@@ -279,6 +284,11 @@ def get_dataset(args, split):
         if 'hypersim' == dataset['name']:
             if 'train' == dataset['split']:
                 dataset_kwargs['subsample'] = args.hypersim_subsample
+
+        # handle depth estimation for ADE20k
+        if 'ade20k' == dataset['name']:
+            if dataset['depth_estimator'] is not None:
+                dataset_kwargs['depth_estimator'] = dataset['depth_estimator']
 
         # check if all sample keys are available
         sample_keys_avail = Dataset.get_available_sample_keys(dataset['split'])

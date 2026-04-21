@@ -228,23 +228,23 @@ class ArgParserEMSAFormer(ap.ArgumentParser):
             type=str,
             choices=KNOWN_BACKBONES,
             default='swin-multi-t-v2-128',
-            help="Backbone to use for RGBD encoder."
+            help="Backbone to use for RGB-D encoder."
         )
         group.add_argument(
             '--rgbd-encoder-backbone-resnet-block',
             type=str,
             choices=KNOWN_BLOCKS,
             default='nonbottleneck1d',
-            help="Block (type) to use in RGBD encoder backbone."
+            help="Block (type) to use in RGB-D encoder backbone."
         )
         group.add_argument(
             '--rgbd-encoder-backbone-pretrained-weights-filepath',
             type=str,
             default=None,
-            help="Path to pretrained (ImageNet) weights for the rgbd encoder "
+            help="Path to pretrained (ImageNet) weights for the RGB-D encoder "
                  "backbone. "
                  "If `weights-filepath` is given, the specified weights are "
-                 "loaded subsequently and may replace the pretrained weights."
+                 "loaded subsequently and may replace these pretrained weights."
         )
 
         # -> context module related parameters
@@ -554,7 +554,7 @@ class ArgParserEMSAFormer(ap.ArgumentParser):
             '--normal-encoder-decoder-fusion',
             type=str,
             choices=KNOWN_ENCODER_DECODER_FUSIONS,
-            default='add-rgb',
+            default='swin-ln-add',
             help="Determines how features of the encoder (after fusing "
                  "encoder features) are fused into the normal decoder."
         )
@@ -812,10 +812,16 @@ class ArgParserEMSAFormer(ap.ArgumentParser):
             '--dataset',
             type=str,
             default='nyuv2',
-            help="Dataset(s) to train/validate on. Use ':' to combine multiple"
-                 "datasets. Note that the first dataset is used for "
-                 "determining dataset/network/training parameters. Use "
-                 "'dataset[camera,camera4]' to select specific cameras. "
+            help="Dataset(s) to train/validate on. "
+                 "Use ':' to combine multiple datasets, e.g., 'nyuv2:sunrgbd'. "
+                 "Note that the first dataset is used in this case  for "
+                 "determining relevant dataset/network/training parameters. "
+                 "Moreover, use 'dataset[camera,camera4]' to select specific "
+                 "cameras of an dataset. "
+                 "To select a specific depth estimator, use: "
+                 "'dataset^depth_estimator', e.g., "
+                 "'ade20k^depthanything_v2__indoor_large'. Note that the depth "
+                 "images must be precomputed. "
                  f"Available datasets: {', '.join(KNOWN_DATASETS)}."
         )
         group.add_argument(
@@ -842,6 +848,14 @@ class ArgParserEMSAFormer(ap.ArgumentParser):
                  "depth values."
         )
         group.add_argument(
+            '--scale-depth',
+            action='store_true',
+            default=False,
+            help="Whether to use scaled depth values (each sample scaled to"
+                 "[0, 1] independently) instead of standardized depth "
+                 "values (mean: 0.0, std: 1.0 across all samples)."
+        )
+        group.add_argument(
             '--use-original-scene-labels',
             action='store_true',
             default=False,
@@ -864,7 +878,7 @@ class ArgParserEMSAFormer(ap.ArgumentParser):
             '--cache-dataset',
             action='store_true',
             default=False,
-            help="Cache dataset to speed up training."
+            help="Cache dataset in RAM to speed up training."
         )
         group.add_argument(
             '--n-workers',
@@ -1017,7 +1031,7 @@ class ArgParserEMSAFormer(ap.ArgumentParser):
                  "checkpointing) in early epochs. For example, passing a"
                  "value of '0.2' and `n_epochs` of '500', skips validation "
                  "for the first 0.2*500 = 100 epochs. A value of '1.0' "
-                 "disables validation at all."
+                 "disables intermediate validations at all."
         )
         group.add_argument(
             '--validation-force-interval',
@@ -1034,6 +1048,21 @@ class ArgParserEMSAFormer(ap.ArgumentParser):
             help="Whether to validate on full-resolution inputs (do not apply "
                  "any resizing to the inputs, for Cityscapes or "
                  "Hypersim dataset)."
+        )
+        group.add_argument(
+            '--validation-resize-keep-aspect-ratio',
+            action='store_true',
+            default=False,
+            help="Whether to keep the aspect ratio when resizing inputs during "
+                 "validation."
+        )
+        group.add_argument(
+            '--validation-resize-padding-mode',
+            type=str,
+            default='zero',
+            choices=('zero', 'reflect'),
+            help="Padding mode to use when resizing inputs during validation "
+                 "and enabled `--validation-resize-keep-aspect-ratio`."
         )
         # -> ScanNet related parameters
         group = self.add_argument_group('Validation/Evaluation -> ScanNet')
@@ -1382,11 +1411,21 @@ class ArgParserEMSAFormer(ap.ArgumentParser):
                 raise ValueError("Scene classification is not supported for "
                                  "COCO dataset.")
 
-        if any(d in pa.dataset for d in ('cityscapes', 'hypersim', 'scannet')):
-            # Depth data for hypersim is clipped to the limit of png16 (uint16)
-            # during dataset preparation. To account for that and to ignore
-            # these pixels '--raw-depth' should be forced. Note, the actual
-            # amount of clipped pixels is quite small.
+        if any(d in pa.dataset for d in ('cityscapes', 'hypersim', 'scannet',
+                                         'ade20k')):
+            # -> Cityscapes: depth values are clipped to 300m, as values above
+            # are most likely invalid, they are set them to 0
+            # -> Hypersim: depth values are clipped to the limit of
+            # png16 (65.535m) during dataset preparation, invalid values are
+            # set to 0 (note, the actual amount of clipped pixels is quite
+            # small)
+            # -> ScanNet: depth is captured with a depth sensor, so the values
+            # contain invalid values anyway
+            # -> ADE20K: depth values are predicted using a depth estimator,
+            # there might be some invalid values
+
+            # to account for this and to ignore these pixels, '--raw-depth'
+            # should be forced
             pa.raw_depth = True
             _warn(f"Forced `raw-depth` as `dataset` is '{pa.dataset}'.")
 

@@ -19,6 +19,7 @@ from nicr_mt_scene_analysis.data.preprocessing import PanopticTargetGenerator
 from nicr_mt_scene_analysis.data.preprocessing import RandomHSVJitter
 from nicr_mt_scene_analysis.data.preprocessing import RandomResize
 from nicr_mt_scene_analysis.data.preprocessing import Resize
+from nicr_mt_scene_analysis.data.preprocessing import ScaleDepth
 from nicr_mt_scene_analysis.data.preprocessing import SemanticClassMapper
 from nicr_mt_scene_analysis.data.preprocessing import ToTorchTensors
 
@@ -146,10 +147,13 @@ def get_preprocessor(
 
         if not args.validation_full_resolution:
             # resize input images to network input resolution
+            # validation_full_resolution means to resizing at all
             transforms.append(
                 Resize(
                     height=args.validation_input_height,
                     width=args.validation_input_width,
+                    keep_aspect_ratio=args.validation_resize_keep_aspect_ratio,
+                    padding_mode=args.validation_resize_padding_mode,
                 )
             )
 
@@ -216,13 +220,28 @@ def get_preprocessor(
     if 'rgb' in args.input_modalities or 'rgbd' in args.input_modalities:
         transforms.append(NormalizeRGB())
     if 'depth' in args.input_modalities or 'rgbd' in args.input_modalities:
-        transforms.append(
-            NormalizeDepth(
-                depth_mean=dataset_config.depth_stats.mean,
-                depth_std=dataset_config.depth_stats.std,
-                raw_depth=args.raw_depth
+        if args.scale_depth:
+            # simply scale depth values - each sample is scaled to [0, 1]
+            # independently
+            transforms.append(
+                ScaleDepth(
+                    new_min=0.0,
+                    new_max=1.0,
+                    raw_depth=args.raw_depth,
+                    invalid_depth_value=0
+                )
             )
-        )
+        else:
+            # standardize depth values - similar to NormalizeRGB but with
+            # depth mean and std
+            transforms.append(
+                NormalizeDepth(
+                    depth_mean=dataset_config.depth_stats.mean,
+                    depth_std=dataset_config.depth_stats.std,
+                    raw_depth=args.raw_depth,
+                    invalid_depth_value=0
+                )
+            )
     transforms.append(ToTorchTensors())
 
     # stack all transforms into a single preprocessor object

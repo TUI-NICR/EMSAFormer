@@ -297,7 +297,7 @@ def visualize_batches(
     # semantic -----------------------------------------------------------------
     if 'semantic' in batch:
         # semantic may have changed due to mapping some classes to void
-        result_dict[f'semantic'] = [
+        result_dict['semantic'] = [
             visualize_semantic_pil(img, colors=colors)
             for img in batch['semantic'].cpu().numpy()
         ]
@@ -367,7 +367,7 @@ def visualize_batches(
         ]
 
         # orientation with outline
-        result_dict[f'orientations'] = [
+        result_dict['orientations'] = [
             visualize_instance_orientations(
                 *data,
                 shared_color_generator=instance_color_generator,
@@ -377,7 +377,7 @@ def visualize_batches(
             for data in zip(batch['instance'].cpu().numpy(),
                             batch['orientations_present'])
         ]
-        result_dict[f'orientations_white_bg'] = [
+        result_dict['orientations_white_bg'] = [
             visualize_instance_orientations(
                 *data,
                 shared_color_generator=instance_color_generator,
