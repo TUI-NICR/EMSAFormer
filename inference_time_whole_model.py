@@ -745,7 +745,7 @@ def main(args):
         assert args.with_postprocessing, "Re-run with `--with-postprocessing`"
 
         results_path = os.path.join(os.path.dirname(__file__),
-                                    f'inference_results',
+                                    'inference_results',
                                     args.dataset)
 
         os.makedirs(results_path, exist_ok=True)

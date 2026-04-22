@@ -1,13 +1,17 @@
 # EMSAFormer: Efficient Multi-Task Scene Analysis with RGB-D Transformers
-This repository contains the code to our paper 
-"EMSAFormer: Efficient Multi-Task Scene Analysis with RGB-D Transformers" 
-([IEEE Xplore](https://ieeexplore.ieee.org/document/10191977), [arXiv](https://arxiv.org/pdf/2306.05242.pdf))
 
-EMSAFormer builds on top of our previous work, 
-[EMSANet](https://github.com/TUI-NICR/EMSANet), to efficiently perform tasks 
-such as semantic and instance segmentation (panoptic segmentation), instance 
-orientation estimation, and scene classification. In EMSAFormer, we replaced 
-the dual CNN-based encoder of EMSANet with a single Swin Transformer.
+> 🔥 **2026-04-21**: updated to keep it working in 2026+ (see the [changelog](#changelog) below)
+
+> [!TIP]
+> You may also want to have a look at our related works:
+> - [EMSANet](https://github.com/TUI-NICR/EMSANet) [IJCNN 2022] - predecessor with CNN-based encoders
+> - [DVEFormer](https://github.com/TUI-NICR/DVEFormer) [IROS 2025] - efficient prediction of dense visual embeddings
+> - [SemanticNDT](https://github.com/TUI-NICR/semantic-mapping) [ICRA 2022] and [PanopticNDT](https://github.com/TUI-NICR/panoptic-mapping) [IROS 2023] - downstream mapping applications.
+
+This repository contains the code to our paper "EMSAFormer: Efficient Multi-Task Scene Analysis with RGB-D
+Transformers" ([IEEE Xplore](https://ieeexplore.ieee.org/document/10191977), [arXiv](https://arxiv.org/abs/2306.05242)).
+
+EMSAFormer builds on top of our previous work, [EMSANet](https://github.com/TUI-NICR/EMSANet), to efficiently perform tasks such as semantic and instance segmentation (panoptic segmentation), instance orientation estimation, and scene classification. In EMSAFormer, we replaced the dual CNN-based encoder of EMSANet with a single Swin Transformer.
 
 ![model architecture](./doc/EMSAFormer-model.png)
 
@@ -54,6 +58,30 @@ Note that the preprint was accepted to be published in IEEE International Joint 
 
 </details>
 
+This work is also embedded in a broader research context that is described in the corresponding PhD thesis:
+
+> Seichter, D. *Szenen- und Umgebungsanalyse in der mobilen Assistenzrobotik*, Ilmenau, Germany, 2025,
+  DOI: [10.22032/dbt.64081](https://doi.org/10.22032/dbt.64081).
+
+The dissertation is written in German, but it can certainly be translated automatically. 😉
+
+<details>
+<summary>BibTeX</summary>
+
+```bibtex
+@phdthesis{seichter2025phd,
+  author    = {Seichter, Daniel},
+  title     = {Szenen- und Umgebungsanalyse in der mobilen Assistenzrobotik},
+  year      = {2025},
+  note      = {Dissertation, Technische Universit{\"a}t Ilmenau, 2024},
+  doi       = {10.22032/dbt.64081},
+  url       = {https://doi.org/10.22032/dbt.64081},
+  language  = {de}
+}
+```
+
+</details>
+
 ## Content
 
 - [Installation](#installation): Set up the environment.
@@ -66,6 +94,7 @@ Note that the preprint was accepted to be published in IEEE International Joint 
 - [Training](#training): Train new EMSAFormer model.
 - [Changelog](#changelog): List of changes and updates made to the project.
 
+
 ## Installation
 1. Clone repository:
     ```bash
@@ -77,34 +106,52 @@ Note that the preprint was accepted to be published in IEEE International Joint 
     ```
 
 2. Create conda environment and install all dependencies:
-    ```bash
-    # option 1: create conda environment from provided YAML file with Python 3.11.0 and PyTorch 2.3 (latest tested version)
 
-    conda env create -f emsaformer_environment_pytorch_2_3.yml
+    **Option 1**: Updated environment from 2026:
+    ```bash
+    conda env create -f env_emsaformer2026.yaml      # linux with cuda (sm_70 - sm_120)
+    conda env create -f env_emsaformer2026_mac.yaml  # macos with mps
+
+    conda activate emsaformer2026
+    ```
+
+    > [!NOTE]
+    > Note that this environment also works with the latest releases of our related work
+    > [EMSANet](https://github.com/TUI-NICR/EMSANet) and
+    > [PanopticNDT](https://github.com/TUI-NICR/panoptic-mapping/tree/release_2026_01_04).
+
+    **Option 2**: Create your own conda environment:
+    ```bash
+    conda create --name "emsaformer2026" python=3.12
+    conda activate emsaformer2026
+
+    python -m pip install numpy opencv-python matplotlib tqdm
+    python -m pip install torch torchvision
+    python -m pip install torchmetrics
+    python -m pip install wandb
+    ```
+
+    **Option 3**: Environment from 2024 - July 2024 update (Python 3.11, PyTorch 2.3.0, CUDA 11.8 on Linux, see
+    `env_emsaformer2024.yaml` and `env_emsaformer2024_mac.yaml` for reference) - go back to
+    [public commit `da5fb55`](https://github.com/TUI-NICR/EMSAFormer/tree/da5fb5589aebc3cbf6d3b9b23357cbba77ee35e5) and follow the
+    instructions given there:
+    ```bash
+    conda env create -f env_emsaformer2024.yaml
     conda activate emsaformer
     ```
 
     ```bash
-    # option 2: create conda environment from provided YAML file with Python 3.8.16 and PyTorch 2.0 (original publication)
-
-    conda env create -f emsaformer_environment_pytorch_2_0.yml
+    conda env create -f env_emsaformer2024_mac.yaml
     conda activate emsaformer
     ```
 
+    **Option 4**: Environment from 2023 - original publication (Python 3.8.16, PyTorch 2.0.0 with CUDA 11.7, see
+    `env_emsaformer2023.yaml` for reference) - go back to
+    [public commit `895f59f`](https://github.com/TUI-NICR/EMSAFormer/tree/895f59f0055a960b284a34da4b32fa52c1e17c29) and follow the
+    instructions given there:
     ```bash
-    # option 3: create new conda environment manually (original publication)
-
-    conda create -n emsaformer python=3.8 anaconda
+    conda env create -f env_emsaformer2023.yaml
     conda activate emsaformer
-
-    # remaining conda dependencies
-    # note: PyTorch 2.0+ works as well
-    conda install pytorch==2.0.0 torchvision==0.15.0 torchaudio==2.0.0 pytorch-cuda=11.7 -c pytorch -c nvidia
-
-    # remaining pip dependencies
-    python -m pip install 'opencv-python==4.2.0.34'    # newer versions may work as well
-    python -m pip install torchmetrics==0.10.2
-    python -m pip install wandb==0.14.2
     ```
 
 3. Install submodule packages:
@@ -120,13 +167,15 @@ Note that the preprint was accepted to be published in IEEE International Joint 
     We trained our networks on 
     [NYUv2](https://cs.nyu.edu/~silberman/datasets/nyu_depth_v2.html), 
     [SUNRGB-D](https://rgbd.cs.princeton.edu/), and
-    [ScanNet](http://www.scan-net.org/). 
+    [ScanNet](http://www.scan-net.org/).
 
-    Please follow the instructions given in `./lib/nicr-scene-analysis-datasets` or [HERE](https://github.com/TUI-NICR/nicr-scene-analysis-datasets/tree/v0.7.0) to prepare the datasets.
-    In the following, we assume that they are stored at `./datasets`
-    
-    > Use `--instances-version emsanet` when preparing the SUNRGB-D dataset to reproduce reported results. 
-      See notes in evaluation section for more details.
+    Please follow the instructions given in `./lib/nicr-scene-analysis-datasets` to prepare the datasets.
+    The executed commands should look similar to the ones in `prepare_datasets.sh`.
+
+    > ⚠️ Use `--instances-version emsanet` when preparing SUNRGB-D to reproduce the reported results.
+    > See the notes in the evaluation section for more details.
+
+    In the following, we assume that they are stored at `./datasets`.
 
 
 ## Results & Weights
@@ -155,19 +204,42 @@ power consumption of 50W and 30W.
 
 The checkpoints denoted by "(Sem(SegFormer))" use a smaller MLP-based decoder
 for performing semantic segmentation, instead of the EMSANet decoder.  
-Download and extract the models to `./trained_models`.
+Download and extract the models to `./trained_models`, or use the following commands:
+```bash
+# for zsh you might want to run:
+# setopt interactive_comments
+
+python -m pip install gdown  # tested: gdown 5.2.0
+cd ./trained_models
+
+# NYUv2
+gdown 1qj7FL2kSA-gu_XdDNtsNaVfWZScrOXnu  # nyuv2_swin_multi_t_v2_128_emsanet_decoder.tar.gz
+gdown 1NeL_4KFFKqQxwMyB1oHewfsUb-4SkAoS  # nyuv2_swin_multi_t_v2_128_segformermlp_decoder.tar.gz
+
+# SUNRGB-D
+gdown 1FHH817pAVIAjIWxDggrCtdszM8PN9KCB  # sunrgbd_swin_multi_t_v2_128_emsanet_decoder.tar.gz
+gdown 1furt5IF_MOA6AeVD4sSm8ZaUASh4quaT  # sunrgbd_swin_multi_t_v2_128_segformermlp_decoder.tar.gz
+
+# ScanNet
+gdown 11mMFdI6mPh_SyQ5y8jxRtc3Sd9p4Q48L  # scannet_swin_multi_t_v2_128_emsanet_decoder.tar.gz
+gdown 1vbL5OCkiiyRDmZIf9lHJ48xnC5NptYwd  # scannet_swin_multi_t_v2_128_segformermlp_decoder.tar.gz
+
+# extract
+find . -name "*.tar.gz" -exec tar -xvzf {} \;
+```
 
 ## Evaluation
 To reproduce results for the full multi-task approach, use `main.py` together 
 with `--validation-only`.
 
-> Note that building the model correctly depends on the respective dataset and 
-the tasks the model was trained on.
+> [!NOTE]
+> Building the model correctly depends on the respective dataset and the tasks the model was trained on.
 
 ### NYUv2
 
 To evaluate on NYUv2 with EMSANet decoder (for semantic segmentation), run:
 ```bash
+
 python main.py \
     --dataset nyuv2 \
     --dataset-path ./datasets/nyuv2 \
@@ -215,6 +287,7 @@ Validation results:
 
 To evaluate on NYUv2 with MLP-based decoder (for semantic segmentation), run:
 ```bash
+
 python main.py \
     --dataset nyuv2 \
     --dataset-path ./datasets/nyuv2 \
@@ -283,6 +356,7 @@ Validation results:
 
 To evaluate on SUNRGB-D with EMSANet decoder (for semantic segmentation), run:
 ```bash
+
 python main.py \
     --dataset sunrgbd \
     --dataset-path ./datasets/sunrgbd \
@@ -332,6 +406,7 @@ Validation results:
 
 To evaluate on SUNRGB-D with MLP-based decoder (for semantic segmentation), run:
 ```bash
+
 python main.py \
     --dataset sunrgbd \
     --dataset-path ./datasets/sunrgbd \
@@ -383,6 +458,7 @@ Validation results:
 
 To evaluate on ScanNet with EMSANet decoder (for semantic segmentation), run:
 ```bash
+
 python main.py \
     --dataset scannet \
     --dataset-path ./datasets/scannet \
@@ -427,6 +503,7 @@ Validation results:
 
 To evaluate on ScanNet with MLP-based decoder (for semantic segmentation), run:
 ```bash
+
 python main.py \
     --dataset scannet \
     --dataset-path ./datasets/scannet \
@@ -486,6 +563,7 @@ to the weights. However, you can also specify the output path with
 
 Example: To apply EMSAFormer trained on NYUv2 to samples from NYUv2, run:
 ```bash
+
 python main.py \
     --dataset nyuv2 \
     --dataset-path ./datasets/nyuv2 \
@@ -510,22 +588,19 @@ python main.py \
 ```
 Similarly, the same can be applied to SUNRGB-D and ScanNet
 (see parameters in [evaluation section](#evaluation)).
-> Note that the `inference_dataset.py` script can be used to predict on the 
-test data of ScanNet and write the results in the format which is required 
-for the official evaluation servers.
+
+> [!NOTE]
+> `inference_dataset.py` can be used to predict on the ScanNet test split and write the results in the format required for the official evaluation servers.
+
 ### Sample Inference
 Use `inference_samples.py` to apply a trained model to the sample from a 
 Kinect v2 given in `./samples`.
 
-> Note that the dataset argument is required to determine the correct dataset
-configuration (classes, colors, ...) and to build the model correctly. 
-However, you do not need to prepare the respective dataset.
-Furthermore, depending on the given depth images and the 
-used dataset for training, an additional depth scaling might be necessary. 
-The provided example depth image is in millimeters (1m equals to a depth 
-value of 1000).
+> [!NOTE]
+> The dataset argument is required to determine the correct dataset configuration (classes, colors, ...) and to build the model correctly. However, you do not need to prepare the respective dataset. Depending on the given depth images and the used dataset for training, an additional depth scaling might be necessary. The provided example depth image is in millimeters (1m equals to a depth value of 1000).
 
 ```bash
+
 python inference_samples.py \
     --dataset sunrgbd \
     --sunrgbd-depth-do-not-force-mm \
@@ -540,14 +615,18 @@ python inference_samples.py \
 ```
 ![img](samples/results/sample.png)
 
-> Note that the model was not trained on that kind of incomplete depth images.
+> [!NOTE]
+> The model was not trained on that kind of incomplete depth images.
 
-> Note that the `--instance-offset-distance-threshold` argument is used to 
-assign an instance ID of 0 to pixels if they have a distance greater than 
-40 pixels from the nearest center. During panoptic merging, these pixels are 
-assigned to the void class.
+> [!TIP]
+> The `--instance-offset-distance-threshold` argument is used to assign an instance ID of 0 to pixels if they have a distance greater than 40 pixels from the nearest center. During panoptic merging, these pixels are assigned to the void class.
 
 ### Time Inference
+
+> [!TIP]
+> The custom TensorRT extension also works with newer TensorRT versions. For more details, we refer to
+> [`tensorrt_swin/README.md`](tensorrt_swin/README.md).
+
 To reproduce the timings on an NVIDIA Jetson AGX Orin 32GB, a custom TensorRT 
 extension, based on NVIDIA's [FasterTransformer](https://github.com/NVIDIA/FasterTransformer), 
 is required. 
@@ -561,26 +640,21 @@ Below, we compare the inference timings of the EMSAFormer with PyTorch and with 
 
 <img src="./doc/nyuv2_timings_orin01_semantic-decoder_emsanet_trtexec.png" width="48%" /><img src="./doc/nyuv2_timings_orin01_semantic-decoder_segformermlp_trtexec.png" width="48%" />
 
-> Note that our custom TensorRT extension also works with newer TensorRT versions.
-  For more details, we refer to the [`tensorrt_swin/README.md`](tensorrt_swin/README.md).
-
 ## Training
-Use `main.py` to train EMSAformer on NYUv2, SUNRGB-D, ScanNet, or any other 
-dataset that you implemented following the implementation of the provided 
+Use `main.py` to train EMSAFormer on NYUv2, SUNRGB-D, ScanNet, or any other
+dataset that you implemented following the implementation of the provided
 datasets.
 
-> Note that training our EMSAFormer with our selected SwinV2-T-128-Multi-Aug as
-encoder requires pretrained weights. You can download our pretrained weights on 
-ImageNet from [Link](https://drive.google.com/uc?id=10hUuPmO49yNIKVPoo6LlWVZS1txccn57).
+> [!NOTE]
+> Training our EMSAFormer with the selected SwinV2-T-128-Multi-Aug encoder requires pretrained weights. You can download our pretrained weights on ImageNet from [Link](https://drive.google.com/uc?id=10hUuPmO49yNIKVPoo6LlWVZS1txccn57).
 
-> Note that we trained all models on NVIDIA A100-SXM4-40GB GPUs with batch 
-size of 8. However, training the full multi-task approach requires ~25GB 
-of VRAM, so a smaller GPU may not work. We did not observe any great boost 
-from larger batch sizes.
+> [!NOTE]
+> We trained all models on NVIDIA A100-SXM4-40GB GPUs with batch size of 8. However, training the full multi-task approach requires ~25GB of VRAM, so a smaller GPU may not work. We did not observe any great boost from larger batch sizes.
 
 Example: Train our full multi-task EMSAFormer with MLP-based decoder 
 (for semantic segmentation) on NYUv2:
 ```bash
+
 python main.py \
     --results-basepath ./results \
     --dataset nyuv2 \
@@ -603,9 +677,13 @@ python main.py \
     --wandb-mode disabled
 ```
 
-> To reproduce the results reported in our EMSANet paper for SUNRGB-D, make
-sure to prepare and use the correct dataset version for SUNRGB-D (see note in 
-[evaluation section](#sunrgb-d)).
+> [!TIP]
+> Panoptic merging and computing all metrics during validation is time-consuming. Have a look at `--validation-skip`
+> and `--validation-force-interval` to reduce the number of validation runs during training.
+
+> [!CAUTION]
+> To reproduce the results reported in our EMSAFormer paper for SUNRGB-D, make sure to prepare and use the correct
+> dataset version for SUNRGB-D (see note in the [evaluation section](#sunrgb-d)).
 
 For more options, we refer to `./emsaformer/args.py` or simply run:
 
@@ -614,6 +692,19 @@ python main.py --help
 ```
 
 ## Changelog
+
+> [!NOTE]
+> Most relevant changes are listed below. Backward compatibility might be broken. However, compatibility to the
+> original publication is retained as far as practical.
+
+**April 21, 2026**
+- add more recent environment (`env_emsaformer2026.yaml` and `env_emsaformer2026_mac.yaml`) with Python 3.12 and latest
+tested PyTorch 2.10.0
+- use ruff for linting
+- bump lib/nicr-scene-analysis-datasets to version 0.9.0
+- bump lib/nicr-multitask-scene-analysis to version 0.3.1
+- fix the off-by-one behavior for `--validation-force-interval`
+- force dynamo = False in torch.onnx.export for now
 
 **July 19, 2024**
 - add more recent and thinned-out environment (`emsaformer_environment_pytorch_2_3.yml`) 

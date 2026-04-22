@@ -20,7 +20,7 @@ from emsaformer.data import get_dataset
 from emsaformer.preprocessing import get_preprocessor
 
 
-@pytest.mark.parametrize('dataset', ('nyuv2', 'sunrgbd', 'hypersim'))
+@pytest.mark.parametrize('dataset', ('nyuv2', 'sunrgbd', 'hypersim', 'scannet'))
 @pytest.mark.parametrize('tasks', (('semantic',),
                                    ('semantic', 'instance'),
                                    ('instance', 'orientation'),
@@ -40,13 +40,26 @@ def test_preprocessing(dataset, tasks, modalities, phase, multiscale):
         tasks = tuple(t for t in tasks if t != 'normal')
 
     parser = ArgParserEMSAFormer()
-    args = parser.parse_args('', verbose=False)
+    additional_args = []
+    if multiscale:
+        # ensure emsanet is used for all decoders as the (default) segformer
+        # mlp decoder does not support multiscale
+        additional_args.extend([
+            '--semantic-decoder', 'emsanet',
+            '--instance-decoder', 'emsanet',
+            '--normal-decoder', 'emsanet'
+        ])
+    args = parser.parse_args(additional_args, verbose=False)
+
     args.tasks = tasks
     args.input_modalities = modalities
     args.dataset = dataset
     args.dataset_path = DATASET_PATH_DICT[dataset]
-    if dataset in ('cityscapes', 'hypersim'):
+    if dataset in ('cityscapes', 'hypersim', 'scannet'):
         args.raw_depth = True
+    if dataset == 'scannet':
+        # to test SemanticClassMapper
+        args.validation_scannet_benchmark_mode = True
 
     dataset = get_dataset(args, 'train')
 
